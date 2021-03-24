@@ -4,11 +4,11 @@
 
 ## 请求和响应
 
-![image-20210313104059971](/Users/zhengyansheng/Desktop/工作台/gitbook/g/imgs/image-20210313104059971-6379065.png)
+![image-20210313104059971](./imgs/image-20210313104059971-6379065.png)
 
 ### Requests
 
-![image-20210314145117963](/Users/zhengyansheng/Desktop/工作台/gitbook/g/imgs/image-20210314145117963-6379127.png)
+![image-20210314145117963](./imgs/image-20210314145117963-6379127.png)
 
 ```
 # GET
