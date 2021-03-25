@@ -4,11 +4,11 @@
 
 ## 请求和响应
 
-![image-20210313104059971](/Users/zhengyansheng/Desktop/工作台/gitbook/g/imgs/image-20210313104059971-6379065.png)
+![image-20210313104059971](./imgs/image-20210313104059971-6379065.png)
 
 ### Requests
 
-![image-20210314145117963](/Users/zhengyansheng/Desktop/工作台/gitbook/g/imgs/image-20210314145117963-6379127.png)
+![image-20210314145117963](./imgs/image-20210314145117963-6379127.png)
 
 ```
 # GET
@@ -401,7 +401,7 @@ from rest_framework.response import Response  # api | json | xml | yaml
 
 ## 解析器和渲染器
 
-![image-20210313103911924](/Users/zhengyansheng/Desktop/工作台/gitbook/g/imgs/image-20210313103911924-6379178.png)
+![image-20210313103911924](./imgs/image-20210313103911924-6379178.png)
 
 
 
@@ -439,7 +439,7 @@ $ pip install djangorestframework-csv
 
 ## 视图
 
-![image-20210312230727487](/Users/zhengyansheng/Desktop/工作台/gitbook/g/imgs/image-20210312230727487-6379216.png)
+![image-20210312230727487](./imgs/image-20210312230727487-6379216.png)
 
 
 
