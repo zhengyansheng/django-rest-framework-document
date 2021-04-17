@@ -1968,7 +1968,10 @@ class APIView(View):
 
 - GenericAPIView 和 APIView 的区别
 -  ModelViewSet 中禁用 POST |  PUT 请求方式
--  View, APIView, ModelViewSet 使用场景
+- View, APIView, ModelViewSet 使用场景
+  -  View 是`Django`内置的视图模块，在项目中几乎不直接使用，因为太底层。
+  -  APIView 如果视图中不涉及到 Model 的操作可以使用。
+  -  ModelViewSet 如果针对Model的操作可以使用，包括分页，增删改查等。
 
 
 
@@ -1993,6 +1996,20 @@ class APIView(View):
 以 **IDE** 的方式 启动Server， 在代码处打上**断点**，查看代码的请求流程 以及 代码逻辑。
 
 
+
+## Django Debug Toolbar
+
+[Toolbar github](https://github.com/jazzband/django-debug-toolbar)
+
+[Doc](https://django-debug-toolbar.readthedocs.io/en/latest/index.html)
+
+
+
+<img src="./imgs/image-20210417114134409.png" alt="image-20210417114134409" style="zoom:50%;" />
+
+
+
+[lightning-ops 可以参考](https://github.com/zhengyansheng/lightning-ops)
 
 
 
@@ -2253,7 +2270,17 @@ https://github.com/pycasbin/django-orm-adapter
 
 > 装饰器的作用，如何写参数装饰器
 
+装饰器是`闭包` 的一种应用场景
 
+装饰器 在Py 中其实是一种语法糖的形式
+
+理解：在不改变原有函数代码的前提下，在函数执行前后，增加额外的功能。
+
+使用场景
+
+- 登陆
+- 权限
+- 日志审计
 
 ```python
 import signal
@@ -2299,27 +2326,21 @@ pprint()
 
 
 
-
-
 ## 内存溢出
 
 > python会发生内存溢出吗，如何解决优化
 
 
 
-如果一个对象被另外一个对象长期的引用，并且没有释放
+https://www.cnblogs.com/Zzbj/p/13532156.html#:~:text=%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E6%98%AF%E6%8C%87%EF%BC%8C%E5%90%91,%E5%BD%93%E7%84%B6%E5%86%85%E5%AD%98%E4%B8%8D%E5%A4%9F%E7%94%A8%E4%BA%86%E3%80%82
 
 
 
-
+https://pythonspeed.com/articles/crash-out-of-memory/
 
 ## queryset
 
 > 当取出的queryset数据量特别大时如何优化处理
-
-
-
-
 
 
 
