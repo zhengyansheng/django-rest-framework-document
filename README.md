@@ -1,14 +1,20 @@
-# DRF 框架
 
-[DRF](https://www.django-rest-framework.org/)
+
+# DRF
+
+[DRF官方文档](https://www.django-rest-framework.org/)
+
+[Classy Django REST Framework](http://www.cdrf.co/)
 
 ## 请求和响应
 
-![image-20210313104059971](./imgs/image-20210313104059971-6379065.png)
+![image-20210313104059971](./imgs/image-20210313104059971.png)
+
+
 
 ### Requests
 
-![image-20210314145117963](./imgs/image-20210314145117963-6379127.png)
+![image-20210314145117963](./imgs/image-20210314145117963.png)
 
 ```
 # GET
@@ -401,7 +407,7 @@ from rest_framework.response import Response  # api | json | xml | yaml
 
 ## 解析器和渲染器
 
-![image-20210313103911924](./imgs/image-20210313103911924-6379178.png)
+![image-20210313103911924](./imgs/image-20210313103911924.png)
 
 
 
@@ -439,7 +445,7 @@ $ pip install djangorestframework-csv
 
 ## 视图
 
-![image-20210312230727487](./imgs/image-20210312230727487-6379216.png)
+![image-20210312230727487](./imgs/image-20210312230727487.png)
 
 
 
@@ -894,6 +900,91 @@ class PublisherModelSerializer(ModelSerializer):
 
 
 
+
+
+### 校验
+
+- 方式1
+
+```
+address = serializers.CharField(read_only=True)
+# address = serializers.ReadOnlyField()
+
+read_only=True
+write_only=True
+
+如果在序列化类中写入read_only=True，那么在反序列化时，这个字段是可传可不传，如果你传了我也不接收，存到数据中为空。
+
+required=False
+如果在序列化类中写入required=False，那么在反序列化时，这个字段是可传可不传，如果你传了就按照你传的保存，否则就是留空。
+```
+
+- 方式2
+
+```
+    class Meta:
+        model = Publisher
+
+        # 序列化
+        # fields = ["name", "create_time"]
+        fields = "__all__"
+
+        # 反序列化
+        # read_only_fields = ["address", ]
+        extra_kwargs = {
+            'address': {
+                # 'write_only': True,
+                'required': True,
+                'min_length': 5,
+                'max_length': 10,
+                "error_messages": {
+                    "required": "address 是必传参数.",
+                    "min_length": "长度最小为5.",
+                    "max_length": "长度最大为10.",
+                },
+            }
+        }
+```
+
+- 方式3
+
+> 对象级验证
+
+```python
+class PublisherModelSerializer(ModelSerializer):
+    # address = serializers.CharField(read_only=True)
+    # address = serializers.CharField(required=False)
+    # address = serializers.ReadOnlyField()
+
+    # 反序列化 校验
+    def validate(self, attrs):
+        print(f"attrs: {attrs}")
+        if attrs.get('address'):
+            if '-' not in attrs['address']:
+                raise ValidationError("address format error.")
+        return attrs
+```
+
+- 方式4
+
+>  字段级验证
+
+![image-20210321110904588](/Users/zhengyansheng/Desktop/工作台/gitbook/g/imgs/image-20210321110904588.png)
+
+
+
+- 方式5
+
+![image-20210321112727210](/Users/zhengyansheng/Desktop/工作台/gitbook/g/imgs/image-20210321112727210.png)
+
+
+
+**优先级顺序**
+
+Meta.extra_kwargs. -> validate_address -> validate
+
+
+
 ## 分页
 
 > .venv/lib/python3.6/site-packages/rest_framework/pagination.py
@@ -901,13 +992,26 @@ class PublisherModelSerializer(ModelSerializer):
 ### PageNumberPagination
 
 ```python
-from rest_framework.pagination import PageNumberPagination
-
-
 class CustomPageNumberPagination(PageNumberPagination):
-    page_size = 10
-    max_page_size = 100
+    # 设置
     page_size_query_param = "page_size"
+
+    # 一页显示多少条数据
+    # 默认值
+    page_size = 5
+
+    # 最大值
+    max_page_size = 10
+```
+
+
+
+```
+[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]
+
+?page=1&page_size=10
+
+?page=2&page_size=10
 ```
 
 
@@ -915,13 +1019,23 @@ class CustomPageNumberPagination(PageNumberPagination):
 ### LimitOffsetPagination
 
 ```python
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.pagination import LimitOffsetPagination
-
-
 class CustomLimitOffsetPagination(LimitOffsetPagination):
-    default_limit = 10
+    # 默认显示多少条数据
+    default_limit = 5
 ```
+
+
+
+```
+[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]
+
+?offset=5&limit=5
+
+offset 是偏移
+limit 来控制数量
+```
+
+
 
 
 
@@ -957,7 +1071,7 @@ https://www.cnblogs.com/catgatp/p/12879228.html
 
 **SearchFilter**
 
-针对 **search_fields** 中的字段做模糊匹配
+针对 **search_fields** 中的字段做模糊匹
 
 
 
@@ -1097,21 +1211,42 @@ class BookFilter(django_filters.FilterSet):
 
 
 
+**问题点**
+
+```
+1. filter_class 和 filterset_class 有什么区别呀
+
+filter_class 没有用过
+
+2. 三个过滤器的优先级
+
+SearchFilter  OrderingFilter 可以同时存在 并且点关系
+/api/v21/book/boos/?search=good&ordering=price
+
+SearchFilter  OrderingFilter 和 DjangoFilterBackend 不同同时
+```
+
+
+
+
+
 https://django-filter.readthedocs.io/en/stable/guide/rest_framework.html
 
 
 
 ## 限流
 
-**种类**
+### AnonRateThrottle
 
-- AnonRateThrottle
-- UserRateThrottle
-- ScopedRateThrottle
+### UserRateThrottle
+
+### ScopedRateThrottle
 
 
 
 作用于 `APIView`上
+
+<!--不要用浏览器 或者是 隐身模式测试。最好用 Postman 测试-->
 
 ```python
 
@@ -1133,11 +1268,27 @@ DEFAULTS = {
 
 
 
-
-
-
-
 ## 异常
+
+
+
+优先级
+
+- 当前类
+- ops11/settings.py 
+- 默认
+  - Api settings DEFAULTS
+
+
+
+```python
+    def get_exception_handler(self):
+        """
+        Returns the exception handler that this view uses.
+        """
+        return self.settings.EXCEPTION_HANDLER
+
+```
 
 
 
@@ -1152,9 +1303,12 @@ def custom_exception_handler(exc, context):
     :return: Response object
     """
     response = exception_handler(exc, context)
-    if response is None:
-        response.data['code'] = 0
-        response.data['message'] = response.data.get('detail')
+    if response is not None:
+        detail = response.data.pop('detail')
+        response.data['code'] = -1
+        response.data['data'] = None
+        response.data['message'] = detail
+        response.data['request_id'] = ""
 
     return response
 ```
@@ -1174,6 +1328,28 @@ REST_FRAMEWORK = {
 ## 中间件
 
 *ops11/middleware/.....*
+
+
+
+
+
+```python
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+```
+
+
+
+> .venv/lib/python3.6/site-packages/django/utils/decorators.py
+>
+> make_middleware_decorator
 
 ```python
 import datetime
@@ -1214,6 +1390,107 @@ MIDDLEWARE = [
 
 
 
+![image-20210328134007007](/Users/zhengyansheng/go/src/github.com/zhengyansheng/django-rest-framework-document/imgs/image-20210328134007007.png)
+
+
+
+### 例子
+
+
+
+```python
+import datetime
+import json
+
+from django.utils.deprecation import MiddlewareMixin
+from rest_framework.response import Response
+
+from apps.audit.models import AuditLog
+
+
+class AuditMiddleware(MiddlewareMixin):
+    pk = None
+
+    def process_request(self, request):
+        print("This is process_request : ", datetime.datetime.now())
+
+        # Pprint(request.META.items())
+        # for k, v in request.META.items():
+        #     print(k, v)
+
+        """
+        PATH_INFO /api/v3/book/publisher
+        REMOTE_ADDR 127.0.0.1
+        # CONTENT_TYPE application/json
+        REQUEST_METHOD GET
+        QUERY_STRING name=%E6%B2%B3%E5%8D%97
+        request.data
+        request.user.username
+        """
+
+        # 白名单 过滤
+        WHITE_LIST = [
+            "/admin",
+        ]
+        for path in WHITE_LIST:
+            if request.META['PATH_INFO'].startswith(path):
+                return
+
+        data = {
+            "uri": request.META['PATH_INFO'],
+            "method": request.META['REQUEST_METHOD'],
+            "query_string": request.META['QUERY_STRING'],
+            "username": request.user.username,
+            "remote_ip": request.META['REMOTE_ADDR'],
+        }
+
+        try:
+            data['body'] = json.loads(request.body)
+        except json.decoder.JSONDecodeError:
+            data['body'] = ""
+        try:
+            obj = AuditLog.objects.create(**data)  # pk = 2
+        except:
+            pass
+        else:
+            self.pk = obj.pk
+
+    def process_view(self, request, callback, callback_args, callback_kwargs):
+        print("This is process_view : ", datetime.datetime.now())
+
+    def process_exception(self, request, exception):
+        print("This is process_exception : ", datetime.datetime.now())
+        try:
+            al = AuditLog.objects.get(pk=self.pk)
+        except AuditLog.DoesNotExist:
+            pass
+        else:
+            al.status_code = -1
+            al.save()
+
+    def process_template_response(self, request, response):
+        #
+        return response
+
+    def process_response(self, request, response):
+        # print("This is process_response : ", datetime.datetime.now())
+        print("This is process_response : ", datetime.datetime.now())
+        if type(response) != Response:
+            return response
+
+        try:
+            al = AuditLog.objects.get(pk=self.pk)
+        except AuditLog.DoesNotExist:
+            return response
+
+        al.status_code = response.data['code']
+        al.save()
+        return response
+
+```
+
+
+
 ## 缓存
 
 ### redis
@@ -1238,7 +1515,10 @@ pip install django-redis
 
 *注意 vm 要映射6379端口，否则无法连接到 redis 服务*
 
+<!--不要用浏览器 或者是 隐身模式测试。最好用 Postman 测试-->
+
 ```python
+// redis
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -1246,6 +1526,15 @@ CACHES = {
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
+    }
+}
+
+
+// local file
+CACHES = {
+    "default": {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': '/tmp/django_cache',
     }
 }
 ```
@@ -1260,6 +1549,8 @@ https://github.com/jazzband/django-redis
 
 ## 认证和权限
 
+![image-20210328092816563](/Users/zhengyansheng/go/src/github.com/zhengyansheng/django-rest-framework-document/imgs/image-20210328092816563.png)
+
 ```python
 class BaseModelViewSet(ModelViewSet):
     authentication_classes = [SessionAuthentication, TokenAuthentication]
@@ -1268,7 +1559,77 @@ class BaseModelViewSet(ModelViewSet):
 
 
 
-### JWT
+**认证 & 权限**
+
+
+
+
+
+### Token认证
+
+```python
+INSTALLED_APPS = [
+    ...
+    'rest_framework.authtoken'
+]
+```
+
+
+
+```bash
+$ make migrate
+```
+
+
+
+> user/management/command/bulk_generator_token.py
+
+```python
+from django.core.management.base import BaseCommand, CommandError
+
+from apps.user.models import UserProfile
+from rest_framework.authtoken.models import Token
+
+
+class Command(BaseCommand):
+    help = 'Bulk generator user token.'
+
+    def handle(self, *args, **options):
+
+        for user in UserProfile.objects.all():
+            Token.objects.get_or_create(user=user)
+```
+
+```bash
+# python manage.py bulk_generator_token
+```
+
+
+
+*urls.py*
+
+```python
+from rest_framework.authtoken import views
+urlpatterns += [
+    path('api-token-auth/', views.obtain_auth_token)
+]
+```
+
+
+
+
+
+![image-20210328154127622](/Users/zhengyansheng/go/src/github.com/zhengyansheng/django-rest-framework-document/imgs/image-20210328154127622.png)
+
+
+
+
+
+![image-20210328160403422](/Users/zhengyansheng/go/src/github.com/zhengyansheng/django-rest-framework-document/imgs/image-20210328160403422.png)
+
+
+
+### JWT认证
 
 ![image-20210319083351778](./imgs/image-20210319083351778.png)
 
@@ -1278,9 +1639,7 @@ class BaseModelViewSet(ModelViewSet):
 $ pip install djangorestframework-jwt
 ```
 
-
-
-
+`salt`
 
 ```python
 from rest_framework_jwt.views import obtain_jwt_token
@@ -1302,8 +1661,12 @@ JWT_AUTH = {
     'JWT_AUTH_HEADER_PREFIX': 'JWT',
     # 启用令牌刷新功能
     'JWT_ALLOW_REFRESH': True,
+
+    # 过期时间 + REFRESH
+    'JWT_REFRESH_EXPIRATION_DELTA': datetime.timedelta(days=2),
+
     # 过期时间
-    'JWT_REFRESH_EXPIRATION_DELTA': datetime.timedelta(minutes=1),
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
 }
 
 ```
@@ -1596,28 +1959,51 @@ class APIView(View):
         raise exceptions.Throttled(wait)  // 抛异常
 ```
 
+## API文档
+
 
 
 ## 疑问🤔️
 
 - GenericAPIView 和 APIView 的区别
 -  ModelViewSet 中禁用 POST |  PUT 请求方式
+-  View, APIView, ModelViewSet 使用场景
+
+
+
+# 工具
+
+## IDE
+
+`command + option + L` 
+
+`find`
+
+## 断点&调试
+
+`print`
+
+`Debug`
+
+![image-20210328100726245](/Users/zhengyansheng/go/src/github.com/zhengyansheng/django-rest-framework-document/imgs/image-20210328100726245.png)
+
+
+
+以 **IDE** 的方式 启动Server， 在代码处打上**断点**，查看代码的请求流程 以及 代码逻辑。
 
 
 
 
 
-## API文档
+# 部署
 
-## 部署
-
-> nginx + gunicorn + supervise
+> nginx + gunicorn + supervisor
 
 
 
 ![image-20210319080950247](./imgs/image-20210319080950247.png)
 
-### gunicorn
+## gunicorn
 
 **gunicorn 命令行**
 
@@ -1746,27 +2132,99 @@ ps aux | grep gunicorn | grep -v grep | awk '{print $2 }' | xargs kill
 
 
 
-### nginx
+## nginx
 
 *config.d/ops11.conf*
 
 ```bash
+server {
+    listen 80;
+    server_name _;
 
+    location /api {
+        proxy_pass http://127.0.0.1:9000;
+        # add_header Access-Control-Allow-Origin *;
+        # add_header Access-Control-Allow-Methods 'GET, POST, PUT, DELETE, OPTIONS, PATCH';
+        # add_header Access-Control-Allow-Headers 'DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization';
+
+        # if ($request_method = 'OPTIONS') {
+        #     return 204;
+        # }
+    }
+
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root html;
+    }
+}
 ```
 
 
 
-### supervisor
+## supervisor
 
 ```bash
+// 安装
+# pip install supervisor
+# supervisord -v
+4.2.2
 
+// 配置
+# echo_supervisord_conf
+# echo_supervisord_conf > /etc/supervisord.conf
+[include]
+files = /etc/supervisor/*.conf
+
+// 启动supervisord
+# supervisord -c /etc/supervisord.conf
+# ps -ef | grep supervisord
+
+// 管控进程配置文件
+# mkdir /etc/supervisor
+# vim /etc/supervisor/ops11.conf
+[program:ops11]
+directory=/opt/ops
+command=/opt/ops/.venv/bin/gunicorn ops.wsgi:application -b 0.0.0.0:9000 -w 4 -k gthread
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/opt/ops/logs/supervisor.log
+startsecs=0
+stopasgroup=true
+killasgroup=true
+
+// 命令行工具
+# supervisorctl status
+# supervisorctl stop ops11
+# supervisorctl start ops11
+# supervisorctl restart ops11
+# supervisorctl reread
+# supervisorctl update
 ```
 
 
 
+```bash
+# ps -ef |grep -v 'grep' | grep 9000 | awk '{ print $2 }' |xargs kill
+```
 
 
-## API 权限系统
+
+http://supervisord.org/installing.html
+
+https://www.jianshu.com/p/ff915e062f86
+
+http://liyangliang.me/posts/2015/06/using-supervisor/
+
+
+
+**异常**
+
+https://stackoverflow.com/questions/40909842/supervisor-fatal-exited-too-quickly-process-log-may-have-details
+
+
+
+# API 权限系统
 
 > 采用开源组件 casbin 来开发
 
@@ -1774,7 +2232,167 @@ ps aux | grep gunicorn | grep -v grep | awk '{print $2 }' | xargs kill
 
 [casbin - github](https://github.com/casbin/pycasbin)
 
+
+
 https://github.com/pycasbin/django-orm-adapter
+
+
+
+## 分享 
+
+### 云主机生命周期
+
+
+
+
+
+# 其它
+
+## 装饰器
+
+> 装饰器的作用，如何写参数装饰器
+
+
+
+```python
+import signal
+import time
+
+
+class TimeoutError(Exception):
+    pass
+
+
+def timeout(seconds, error_message='Function call timed out'):
+    def decorate(func):
+        def wrapper(*args, **kwargs):
+            def _handle_timeout(signum, frame):
+                raise TimeoutError(error_message)
+
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+
+            print("---> wrapper start")
+            try:
+                return func(*args, **kwargs)
+            except TimeoutError:
+                print("timeout err")
+            finally:
+                signal.alarm(0)
+            print("---> wrapper stop")
+
+        return wrapper
+
+    return decorate
+
+
+@timeout(3)
+def pprint(*args, **kwargs):
+    time.sleep(5)
+    print(f"args: {args}, \nkwargs: {kwargs}")
+
+
+pprint()
+
+```
+
+
+
+
+
+## 内存溢出
+
+> python会发生内存溢出吗，如何解决优化
+
+
+
+如果一个对象被另外一个对象长期的引用，并且没有释放
+
+
+
+
+
+## queryset
+
+> 当取出的queryset数据量特别大时如何优化处理
+
+
+
+
+
+
+
+
+
+## GIL
+
+> python的GIL, 什么时候释放GIL锁，互斥锁和Gil锁的关系
+
+
+
+`GIL`  **global interpreter lock** 全局解释器锁
+
+- 首先，要清楚，为什么要引入锁？
+
+如果在单进程单线程模式中，其实是不需要锁，因为只有一个线程在操作，肯定是安全的；
+
+只有在并发编程中才会有锁的概念，因为在并发编程中要保证数据的安全，防止同时对同一个资源操作，因此锁就是一种方式。
+
+
+
+- 其次，什么是互斥锁？
+
+加锁，释放锁
+
+一旦一个线程T1加锁，在T1没有释放锁之前，其它线程只能处于等待的状态。
+
+互斥锁是为了保证多个线程对同一个全局变量或者同一个资源操作时，保证数据是安全的。
+
+
+
+引入了GIL，主要是为了保证多线程同一时间只能有一个线程运行
+
+GIL 导致了多线程*并发*执行变成了*串行*执行，并且只能利用单核，适用于IO密集型，不适合CPU密集型。
+
+如果想利用多核，就要用多进程模式。
+
+
+
+https://www.huaweicloud.com/articles/904da24cc1d2997ca378ade718806ec0.html
+
+https://cloud.tencent.com/developer/article/1597907
+
+
+
+## 内存管理
+
+> python垃圾回收机制
+
+
+
+- 引用计数
+- 追踪式垃圾回收
+  - 标记和清除
+  - 分代回收
+- 内存池
+
+
+
+
+
+https://read.douban.com/reader/ebook/1499455/?from=book
+
+https://zhuanlan.zhihu.com/p/164627977
+
+https://www.cnblogs.com/xybaby/p/7491656.html
+
+https://zhuanlan.zhihu.com/p/65839740
+
+
+
+
+
+
 
 
 
