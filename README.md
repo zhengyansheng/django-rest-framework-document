@@ -1975,9 +1975,50 @@ class APIView(View):
 
 
 
+```python
+class LightningAPIView(APIView):
+  
+  def get():
+    pass
+  
+  def post():
+    pass
+  
+  
+  
+class LightningAPIView(ModelViewSet):
+  
+  ....
+  
+  
+  
+  
+xx/xx/x/<id> GET | PUT | DELETE
+xx/xx/x/  GET | POST
+
+路由
+视图
+序列化
+	- 序列化 和 反序列化
+  - 验证
+  - create | put  -> database
+  
+  
+如果不涉及到数据库的操作， 就不要用 router + Viewset(serializer)
+path + APIView
+
+
+
+基础 郑
+Vue 4d + 4d 2个项目 兰 8d
+作业平台 + 发布系统 孙老师 4d
+```
+
+
+
 # 工具
 
-## IDE
+## IDE 快捷键
 
 `command + option + L` 
 
@@ -1999,11 +2040,7 @@ class APIView(View):
 
 ## Django Debug Toolbar
 
-[Toolbar github](https://github.com/jazzband/django-debug-toolbar)
-
-[Doc](https://django-debug-toolbar.readthedocs.io/en/latest/index.html)
-
-
+`Django Debug Toolbar`是一组可配置的面板，这些面板显示有关当前请求/响应的各种调试信息，并且在单击时显示有关面板内容的更多详细信息。
 
 <img src="./imgs/image-20210417114134409.png" alt="image-20210417114134409" style="zoom:50%;" />
 
@@ -2011,7 +2048,9 @@ class APIView(View):
 
 [lightning-ops 可以参考](https://github.com/zhengyansheng/lightning-ops)
 
+[Toolbar github](https://github.com/jazzband/django-debug-toolbar)
 
+[Doc](https://django-debug-toolbar.readthedocs.io/en/latest/index.html)
 
 # 部署
 
@@ -2023,16 +2062,33 @@ class APIView(View):
 
 ## gunicorn
 
+```bash
+$ pip install gunicorn
+$ pip install gevent
+```
+
+
+
 **gunicorn 命令行**
 
 ```bash
-$ gunicorn --worker-class=sync ops11.wsgi:application
-$ gunicorn --worker-class=gevent ops11.wsgi:application
+$ gunicorn --worker-class=sync ops11.wsgi:application -b=127.0.0.1:9000
+$ gunicorn --worker-class=gevent ops11.wsgi:application -b=127.0.0.1:9000
 
 $ gunicorn ops11.wsgi:application -b 0.0.0.0:9000 -w 4 -k gthread
 $ gunicorn ops11.wsgi:application -b 0.0.0.0:9000 -w 4 -k gthread  --thread 40 --max-requests 4096 --max-requests-jitter 512
 
 $ pkill gunicorn
+```
+
+
+
+```bash
+# 参数
+-w INT, --workers INT The number of worker processes for handling requests. [1]
+--threads 				INT         The number of worker threads for handling requests.[1]
+--reload              Restart workers when code changes. [False]
+-D, --daemon          Daemonize the Gunicorn process. [False]
 ```
 
 
@@ -2169,6 +2225,55 @@ server {
         #     return 204;
         # }
     }
+    
+    location /static {
+        alias .../ops11/static/;
+    }
+
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root html;
+    }
+}
+```
+
+
+
+
+
+```bash
+server {
+    listen 80;
+    server_name _;
+
+    location /api {
+        proxy_pass http://127.0.0.1:9000;
+        # add_header Access-Control-Allow-Origin *;
+        # add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,OPTIONS,DELETE";
+        # add_header Access-Control-Allow-Headers "Accept,Authorization,Cache-Control,Content-Type,DNT,If-Modified-Since,If-None-Match,Keep-Alive,Origin,User-Agent,X-Mx-ReqToken,X-Requested-With";
+    }
+
+    location /admin {
+        proxy_pass http://127.0.0.1:9000;
+        # add_header Access-Control-Allow-Origin *;
+        # add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,OPTIONS,DELETE";
+        # add_header Access-Control-Allow-Headers "Accept,Authorization,Cache-Control,Content-Type,DNT,If-Modified-Since,If-None-Match,Keep-Alive,Origin,User-Agent,X-Mx-ReqToken,X-Requested-With";
+    }
+
+    location /static {
+        alias /www.51reboot.com/ops/static/;
+    }
+
+    location / {
+        root /www.51reboot.com/lightning-fe/dist;
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html =404;
+
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,OPTIONS,DELETE";
+        add_header Access-Control-Allow-Headers "Accept,Authorization,Cache-Control,Content-Type,DNT,If-Modified-Since,If-None-Match,Keep-Alive,Origin,User-Agent,X-Mx-ReqToken,X-Requested-With";
+
+    }
 
     error_page 500 502 503 504 /50x.html;
     location = /50x.html {
@@ -2228,13 +2333,13 @@ killasgroup=true
 
 
 
+参考文章：
+
 http://supervisord.org/installing.html
 
 https://www.jianshu.com/p/ff915e062f86
 
 http://liyangliang.me/posts/2015/06/using-supervisor/
-
-
 
 **异常**
 
@@ -2246,19 +2351,340 @@ https://stackoverflow.com/questions/40909842/supervisor-fatal-exited-too-quickly
 
 > 采用开源组件 casbin 来开发
 
+权限可分三类
 
+- 菜单栏权限
+- 按钮权限
+- API权限
+
+![image-20210418080214583](./imgs/image-20210418080214583.png)
+
+![image-20210418122710027](./imgs/image-20210418122710027.png)
+
+
+
+```
+p, 用户, URI, METHOD
+p, 组，URI, METHOD
+g, 用户，组
+```
+
+
+
+> 啰嗦复杂
+
+```python
+    def enforce(self, *rvals):
+        """decides whether a "subject" can access a "object" with the operation "action",
+        input parameters are usually: (sub, obj, act).
+        """
+        result, _ = self.enforceEx(*rvals)
+        return result
+
+    def enforceEx(self, *rvals):
+        """decides whether a "subject" can access a "object" with the operation "action",
+        input parameters are usually: (sub, obj, act).
+        return judge result with reason
+        """
+        explain_index = -1
+
+        if not self.enabled:
+            return False
+
+        functions = self.fm.get_functions()
+
+        if "g" in self.model.model.keys():
+            for key, ast in self.model.model["g"].items():
+                rm = ast.rm
+                functions[key] = generate_g_function(rm)
+
+        if "m" not in self.model.model.keys():
+            raise RuntimeError("model is undefined")
+
+        if "m" not in self.model.model["m"].keys():
+            raise RuntimeError("model is undefined")
+
+        r_tokens = self.model.model["r"]["r"].tokens
+        p_tokens = self.model.model["p"]["p"].tokens
+
+        if len(r_tokens) != len(rvals):
+            raise RuntimeError("invalid request size")
+
+        exp_string = self.model.model["m"]["m"].value
+        has_eval = util.has_eval(exp_string)
+        if not has_eval:
+            expression = self._get_expression(exp_string, functions)
+
+        policy_effects = set()
+
+        r_parameters = dict(zip(r_tokens, rvals))
+
+        policy_len = len(self.model.model["p"]["p"].policy)
+
+        explain_index = -1
+        if not 0 == policy_len:
+            for i, pvals in enumerate(self.model.model["p"]["p"].policy):
+                if len(p_tokens) != len(pvals):
+                    raise RuntimeError("invalid policy size")
+
+                p_parameters = dict(zip(p_tokens, pvals))
+                parameters = dict(r_parameters, **p_parameters)
+
+                if util.has_eval(exp_string):
+                    rule_names = util.get_eval_value(exp_string)
+                    rules = [util.escape_assertion(p_parameters[rule_name]) for rule_name in rule_names]
+                    exp_with_rule = util.replace_eval(exp_string, rules)
+                    expression = self._get_expression(exp_with_rule, functions)
+
+                result = expression.eval(parameters)
+
+                if isinstance(result, bool):
+                    if not result:
+                        policy_effects.add(Effector.INDETERMINATE)
+                        continue
+                elif isinstance(result, float):
+                    if 0 == result:
+                        policy_effects.add(Effector.INDETERMINATE)
+                        continue
+                else:
+                    raise RuntimeError("matcher result should be bool, int or float")
+
+                if "p_eft" in parameters.keys():
+                    eft = parameters["p_eft"]
+                    if "allow" == eft:
+                        policy_effects.add(Effector.ALLOW)
+                    elif "deny" == eft:
+                        policy_effects.add(Effector.DENY)
+                    else:
+                        policy_effects.add(Effector.INDETERMINATE)
+                else:
+                    policy_effects.add(Effector.ALLOW)
+
+                if self.eft.intermediate_effect(policy_effects) != Effector.INDETERMINATE:
+                    explain_index = i
+                    break
+
+        else:
+            if has_eval:
+                raise RuntimeError("please make sure rule exists in policy when using eval() in matcher")
+
+            parameters = r_parameters.copy()
+
+            for token in self.model.model["p"]["p"].tokens:
+                parameters[token] = ""
+
+            result = expression.eval(parameters)
+
+            if result:
+                policy_effects.add(Effector.ALLOW)
+            else:
+                policy_effects.add(Effector.INDETERMINATE)
+
+        final_effect = self.eft.final_effect(policy_effects)
+        result = effect_to_bool(final_effect)
+
+        # Log request.
+
+        req_str = "Request: "
+        req_str = req_str + ", ".join([str(v) for v in rvals])
+
+        req_str = req_str + " ---> %s" % result
+        if result:
+            self.logger.info(req_str)
+        else:
+            # leaving this in error for now, if it's very noise this can be changed to info or debug
+            self.logger.error(req_str)
+
+        explain_rule = []
+        if explain_index != -1 and explain_index < policy_len:
+            explain_rule = self.model.model["p"]["p"].policy[explain_index]
+
+        return result, explain_rule
+```
+
+
+
+
+
+> .venv/lib/python3.6/site-packages/casbin/util/builtin_operators.py
+
+```python
+import fnmatch
+import re
+import ipaddress
+
+KEY_MATCH2_PATTERN = re.compile(r'(.*?):[^\/]+(.*?)')
+KEY_MATCH3_PATTERN = re.compile(r'(.*?){[^\/]+}(.*?)')
+
+
+def key_match(key1, key2):
+    """determines whether key1 matches the pattern of key2 (similar to RESTful path), key2 can contain a *.
+    For example, "/foo/bar" matches "/foo/*"
+    """
+
+    i = key2.find("*")
+    if i == -1:
+        return key1 == key2
+
+    if len(key1) > i:
+        return key1[:i] == key2[:i]
+    return key1 == key2[:i]
+
+
+def key_match_func(*args):
+    """The wrapper for key_match.
+    """
+    name1 = args[0]
+    name2 = args[1]
+
+    return key_match(name1, name2)
+
+
+def key_match2(key1, key2):
+    """determines whether key1 matches the pattern of key2 (similar to RESTful path), key2 can contain a *.
+    For example, "/foo/bar" matches "/foo/*", "/resource1" matches "/:resource"
+    """
+
+    key2 = key2.replace("/*", "/.*")
+    key2 = KEY_MATCH2_PATTERN.sub(r'\g<1>[^\/]+\g<2>', key2, 0)
+
+    return regex_match(key1, "^" + key2 + "$")
+
+
+def key_match2_func(*args):
+    name1 = args[0]
+    name2 = args[1]
+
+    return key_match2(name1, name2)
+
+
+def key_match3(key1, key2):
+    """determines determines whether key1 matches the pattern of key2 (similar to RESTful path), key2 can contain a *.
+    For example, "/foo/bar" matches "/foo/*", "/resource1" matches "/{resource}"
+    """
+
+    key2 = key2.replace("/*", "/.*")
+    key2 = KEY_MATCH3_PATTERN.sub(r'\g<1>[^\/]+\g<2>', key2, 0)
+
+    return regex_match(key1, "^" + key2 + "$")
+
+
+def key_match3_func(*args):
+    name1 = args[0]
+    name2 = args[1]
+
+    return key_match3(name1, name2)
+
+
+def regex_match(key1, key2):
+    """determines whether key1 matches the pattern of key2 in regular expression."""
+
+    res = re.match(key2, key1)
+    if res:
+        return True
+    else:
+        return False
+
+
+def regex_match_func(*args):
+    """the wrapper for RegexMatch."""
+
+    name1 = args[0]
+    name2 = args[1]
+
+    return regex_match(name1, name2)
+
+
+def glob_match(string, pattern):
+    """determines whether string matches the pattern in glob expression."""
+    return fnmatch.fnmatch(string, pattern)
+
+
+def glob_match_func(*args):
+    """the wrapper for globMatch."""
+
+    string = args[0]
+    pattern = args[1]
+
+    return glob_match(string, pattern)
+
+
+def ip_match(ip1, ip2):
+    """IPMatch determines whether IP address ip1 matches the pattern of IP address ip2, ip2 can be an IP address or a CIDR pattern.
+    For example, "192.168.2.123" matches "192.168.2.0/24"
+    """
+    ip1 = ipaddress.ip_address(ip1)
+    try:
+        network = ipaddress.ip_network(ip2, strict=False)
+        return ip1 in network
+    except ValueError:
+        return ip1 == ip2
+
+
+def ip_match_func(*args):
+    """the wrapper for IPMatch."""
+
+    ip1 = args[0]
+    ip2 = args[1]
+
+    return ip_match(ip1, ip2)
+
+
+def generate_g_function(rm):
+    """the factory method of the g(_, _) function."""
+
+    def f(*args):
+        name1 = args[0]
+        name2 = args[1]
+
+        if not rm:
+            return name1 == name2
+        elif 2 == len(args):
+            return rm.has_link(name1, name2)
+        else:
+            domain = str(args[2])
+            return rm.has_link(name1, name2, domain)
+
+    return f
+
+```
+
+
+
+```python
+def generate_g_function(rm):
+    """the factory method of the g(_, _) function."""
+
+    def f(*args):
+        name1 = args[0]
+        name2 = args[1]
+
+        if not rm:
+            return name1 == name2
+        elif 2 == len(args):
+            return rm.has_link(name1, name2)
+        else:
+            domain = str(args[2])
+            return rm.has_link(name1, name2, domain)
+
+    return f
+```
+
+
+
+
+
+参考文章：
 
 [casbin - github](https://github.com/casbin/pycasbin)
-
-
 
 https://github.com/pycasbin/django-orm-adapter
 
 
 
-## 分享 
+# 分享 
 
-### 云主机生命周期
+## 云主机生命周期
 
 
 
@@ -2330,17 +2756,58 @@ pprint()
 
 > python会发生内存溢出吗，如何解决优化
 
+Py 语言是支持自动垃圾回收机制的，为什么还会存在内存泄漏呢？概括来说 主要有以下三点
 
+- 所用到的用 C 语言开发的底层模块中出现了内存泄露
+- 代码中用到了全局的 list、 dict 或其它容器，不停的往这些容器中插入对象，而忘记了在使用完之后进行删除回收
+- 代码中有“引用循环”，并且被循环引用的对象定义了__del__方法，就会发生内存泄露。
+
+
+
+```python
+a = []
+
+while True:
+  a.append("xxxxxxx")
+  
+  
+s = "xxx"
+print(dir(s))
+del s
+```
+
+
+
+
+
+参考文章：
+
+https://pythonspeed.com/articles/crash-out-of-memory/
 
 https://www.cnblogs.com/Zzbj/p/13532156.html#:~:text=%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E6%98%AF%E6%8C%87%EF%BC%8C%E5%90%91,%E5%BD%93%E7%84%B6%E5%86%85%E5%AD%98%E4%B8%8D%E5%A4%9F%E7%94%A8%E4%BA%86%E3%80%82
 
 
 
-https://pythonspeed.com/articles/crash-out-of-memory/
-
 ## queryset
 
 > 当取出的queryset数据量特别大时如何优化处理
+
+
+
+```python
+Model User
+
+queryset = User.objects.all()  # [(), (), ()]
+
+# where
+User.objects.filter(......)
+```
+
+
+
+
+
+参考文章
 
 
 
@@ -2352,13 +2819,20 @@ https://pythonspeed.com/articles/crash-out-of-memory/
 
 
 
-`GIL`  **global interpreter lock** 全局解释器锁
+`GIL`  **global interpreter lock** 全局解释器锁 Cpython,  JPython
 
 - 首先，要清楚，为什么要引入锁？
 
 如果在单进程单线程模式中，其实是不需要锁，因为只有一个线程在操作，肯定是安全的；
 
 只有在并发编程中才会有锁的概念，因为在并发编程中要保证数据的安全，防止同时对同一个资源操作，因此锁就是一种方式。
+
+
+
+```python
+多线程中 lock
+golang  channel lock
+```
 
 
 
@@ -2380,27 +2854,38 @@ GIL 导致了多线程*并发*执行变成了*串行*执行，并且只能利用
 
 
 
+参考文章：
+
 https://www.huaweicloud.com/articles/904da24cc1d2997ca378ade718806ec0.html
 
 https://cloud.tencent.com/developer/article/1597907
 
 
 
-## 内存管理
-
-> python垃圾回收机制
-
-
+## 垃圾回收机制
 
 - 引用计数
 - 追踪式垃圾回收
   - 标记和清除
   - 分代回收
-- 内存池
+
+
+
+```python
+a = []
+b = []
+
+a = [b]
+b = [a]
+```
 
 
 
 
+
+参考文章：
+
+https://www.cnblogs.com/Zzbj/p/10088714.html
 
 https://read.douban.com/reader/ebook/1499455/?from=book
 
