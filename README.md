@@ -2261,11 +2261,11 @@ server {
     }
 
     location /static {
-        alias /www.51reboot.com/ops/static/;
+        alias /data/static/;
     }
 
     location / {
-        root /www.51reboot.com/lightning-fe/dist;
+        root /data/lightning-fe/dist;
         index index.html index.htm;
         try_files $uri $uri/ /index.html =404;
 
@@ -2878,28 +2878,4 @@ b = []
 a = [b]
 b = [a]
 ```
-
-
-
-
-
-参考文章：
-
-https://www.cnblogs.com/Zzbj/p/10088714.html
-
-https://read.douban.com/reader/ebook/1499455/?from=book
-
-https://zhuanlan.zhihu.com/p/164627977
-
-https://www.cnblogs.com/xybaby/p/7491656.html
-
-https://zhuanlan.zhihu.com/p/65839740
-
-
-
-
-
-
-
-
 
